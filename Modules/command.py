@@ -276,13 +276,8 @@ def mgtCommand(self, Devices, Unit, Command, Level, Color):
             # Refresh will be done via the Report Attribute
             request_read_device_status(self, NWKID)
 
-        self.log.logging(
-            "Command",
-            "Debug",
-            "mgtCommand : Off for Device: %s EPout: %s Unit: %s DeviceType: %s modelName: %s"
-            % (NWKID, EPout, Unit, DeviceType, _model_name),
-            NWKID,
-        )
+        self.log.logging( "Command", "Debug", "mgtCommand : Off for Device: %s EPout: %s Unit: %s DeviceType: %s modelName: %s" % (
+            NWKID, EPout, Unit, DeviceType, _model_name), NWKID, )
 
         if _model_name in ( "TS0601-switch", "TS0601-2Gangs-switch", "TS0601-2Gangs-switch", ):
             self.log.logging("Command", "Debug", "mgtCommand : Off for Tuya Switches Gang/EPout: %s" % EPout)
@@ -539,19 +534,10 @@ def mgtCommand(self, Devices, Unit, Command, Level, Color):
     if Command in ( "On", "Open", ):  # Manage the On command.
         # Let's force a refresh of Attribute in the next Heartbeat
         request_read_device_status(self, NWKID)
-        self.log.logging(
-            "Command",
-            "Debug",
-            "mgtCommand : On for Device: %s EPout: %s Unit: %s DeviceType: %s ModelName: %s"
-            % (NWKID, EPout, Unit, DeviceType, _model_name),
-            NWKID,
-        )
+        self.log.logging( "Command", "Debug", "mgtCommand : On for Device: %s EPout: %s Unit: %s DeviceType: %s ModelName: %s" % (
+            NWKID, EPout, Unit, DeviceType, _model_name), NWKID, )
 
-        if _model_name in (
-            "TS0601-switch",
-            "TS0601-2Gangs-switch",
-            "TS0601-2Gangs-switch",
-        ):
+        if _model_name in ( "TS0601-switch", "TS0601-2Gangs-switch", "TS0601-2Gangs-switch", ):
             self.log.logging("Command", "Debug", "mgtCommand : On for Tuya Switches Gang/EPout: %s" % EPout)
 
             tuya_switch_command(self, NWKID, "01", gang=int(EPout, 16))
@@ -679,6 +665,11 @@ def mgtCommand(self, Devices, Unit, Command, Level, Color):
 
         if Devices[Unit].SwitchType in (13, 14, 15, 16):
             UpdateDevice_v2(self, Devices, Unit, 1, "100", BatteryLevel, SignalLevel, ForceUpdate_=forceUpdateDev)
+
+        elif Devices[Unit].SwitchType in (7, ):
+            self.log.logging( "Command", "Debug", "mgtCommand - Updating Widget Dimmer %s:%s" %( 1, Level))
+            UpdateDevice_v2(self, Devices, Unit, 1, Level, BatteryLevel, SignalLevel, ForceUpdate_=forceUpdateDev)
+
         else:
             UpdateDevice_v2(self, Devices, Unit, 1, "On", BatteryLevel, SignalLevel, ForceUpdate_=forceUpdateDev)
 

@@ -834,6 +834,9 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                     if value == "00":
                         nValue = 0
                         sValue = prev_sValue
+                    elif value == "01":
+                        nValue= 2
+                        sValue = prev_sValue
                     
                 UpdateDevice_v2(self, Devices, DeviceUnit, nValue, sValue, BatteryLevel, SignalLevel)
 
@@ -959,11 +962,15 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                         if Devices[DeviceUnit].nValue == 0 and Devices[DeviceUnit].sValue == "Off":
                             UpdateDevice_v2(self, Devices, DeviceUnit, 1, "100", BatteryLevel, SignalLevel)
                             
-                elif Devices[DeviceUnit].SwitchType in (7,) and value == "00":
-                        nValue = 0
-                        sValue = prev_sValue
-                        UpdateDevice_v2(self, Devices, DeviceUnit, 0, sValue, BatteryLevel, SignalLevel)
-
+                #elif Devices[DeviceUnit].SwitchType in (7,) and value == "00":
+                #        nValue = 0
+                #        sValue = prev_sValue
+                #        UpdateDevice_v2(self, Devices, DeviceUnit, 0, sValue, BatteryLevel, SignalLevel)
+                        
+                #elif Devices[DeviceUnit].SwitchType in (7,) and value == "01":
+                #        nValue = 1
+                #        sValue = prev_sValue
+                #        UpdateDevice_v2(self, Devices, DeviceUnit, 0, sValue, BatteryLevel, SignalLevel)
                 else:
                     # Required Off and On
                     if value == "00":
@@ -1086,6 +1093,7 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                         self.log.logging( "Widget", "Debug", "------>  LvlControl (Blind) UpdateDevice: -> %s/%s SwitchType: %s" % ( 
                             0, 0, Devices[DeviceUnit].SwitchType), NWKID, )
                         UpdateDevice_v2(self, Devices, DeviceUnit, 0, "0", BatteryLevel, SignalLevel)
+                        
                     elif Devices[DeviceUnit].SwitchType in (7, ):
                         self.log.logging( "Widget", "Debug", "------>  LvlControl (Dim) UpdateDevice: -> %s/%s SwitchType: %s" % ( 
                             0, 0, Devices[DeviceUnit].SwitchType), NWKID, )
