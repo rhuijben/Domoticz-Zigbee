@@ -142,24 +142,21 @@ ACTIONATORS = [
 def mgtCommand(self, Devices, Unit, Command, Level, Color):
 
     if Devices[Unit].DeviceID not in self.IEEE2NWK:
-        Domoticz.Error(
-            "mgtCommand - something strange the Device %s DeviceID: %s Unknown"
-            % (Devices[Unit].Name, Devices[Unit].DeviceID)
-        )
+        self.log.logging( "Command", "Error", "mgtCommand - something strange the Device %s DeviceID: %s Unknown" % (
+            Devices[Unit].Name, Devices[Unit].DeviceID) )
         return
 
     NWKID = self.IEEE2NWK[Devices[Unit].DeviceID]
-    self.log.logging(
-        "Command",
-        "Debug",
-        "mgtCommand (%s) Devices[%s].Name: %s Command: %s Level: %s Color: %s"
-        % (NWKID, Unit, Devices[Unit].Name, Command, Level, Color),
-        NWKID,
-    )
+    self.log.logging( "Command", "Debug", "mgtCommand (%s) Devices[%s].Name: %s Command: %s Level: %s Color: %s" % (
+        NWKID, Unit, Devices[Unit].Name, Command, Level, Color), NWKID, )
 
     deviceType = Devices[Unit].Type
     deviceSubType = Devices[Unit].SubType
     deviceSwitchType = Devices[Unit].SwitchType
+    
+    self.log.logging("Command", "Debug", "---------> deviceType:        %s" %(deviceType))
+    self.log.logging("Command", "Debug", "---------> deviceSubType:     %s" %(deviceSubType))
+    self.log.logging("Command", "Debug", "---------> deviceSwitchType:  %s" %(deviceSwitchType))
 
     if (deviceType, deviceSubType, deviceSwitchType) in DEVICE_SWITCH_MATRIX:
         domoticzType = DEVICE_SWITCH_MATRIX[(deviceType, deviceSubType, deviceSwitchType)]
@@ -525,8 +522,15 @@ def mgtCommand(self, Devices, Unit, Command, Level, Color):
 
         # Update Devices
         if Devices[Unit].SwitchType in (13, 14, 15, 16):
+            self.log.logging( "Command", "Debug", "mgtCommand - Updating Widget Blind %s:%s" %( 0, 0))
             UpdateDevice_v2(self, Devices, Unit, 0, "0", BatteryLevel, SignalLevel, ForceUpdate_=forceUpdateDev)
+            
+        elif Devices[Unit].SwitchType in (7, ):
+            self.log.logging( "Command", "Debug", "mgtCommand - Updating Widget Dimmer %s:%s" %( 0, Level))
+            UpdateDevice_v2(self, Devices, Unit, 0, Level, BatteryLevel, SignalLevel, ForceUpdate_=forceUpdateDev)
+            
         else:
+            self.log.logging( "Command", "Debug", "mgtCommand - Updating Widget other %s:%s" %( 0, "Off"))
             UpdateDevice_v2(self, Devices, Unit, 0, "Off", BatteryLevel, SignalLevel, ForceUpdate_=forceUpdateDev)
 
         # Let's force a refresh of Attribute in the next Heartbeat

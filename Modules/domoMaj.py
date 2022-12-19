@@ -121,6 +121,7 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
 
         Switchtype = Devices[DeviceUnit].SwitchType
         Subtype = Devices[DeviceUnit].SubType
+        prev_sValue = Devices[DeviceUnit].sValue
 
         # DeviceUnit is the Device unit
         # WidgetEp is the Endpoint to which the widget is linked to
@@ -812,12 +813,8 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
             # Plug, Door, Switch, Button ...
             # We reach this point because ClusterType is Door or Switch. It means that Cluster 0x0006 or 0x0500
             # So we might also have to manage case where we receive a On or Off for a LvlControl WidgetType like a dimming Bulb.
-            self.log.logging(
-                "Widget",
-                "Debug",
-                "------> Generic Widget for %s ClusterType: %s WidgetType: %s Value: %s" % (NWKID, ClusterType, WidgetType, value),
-                NWKID,
-            )
+            self.log.logging( "Widget", "Debug", "------> Generic Widget for %s ClusterType: %s WidgetType: %s Value: %s" % (
+                NWKID, ClusterType, WidgetType, value), NWKID, )
 
             if ClusterType == "Switch" and WidgetType == "LvlControl":
                 # Called with ClusterID: 0x0006 but we have to update a Dimmer, so we need to keep the level
@@ -833,6 +830,11 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                         sValue = "100"
                     else:
                         nValue = 2
+                elif Devices[DeviceUnit].SwitchType in (7,):
+                    if value == "00":
+                        nValue = 0
+                        sValue = prev_sValue
+                    
                 UpdateDevice_v2(self, Devices, DeviceUnit, nValue, sValue, BatteryLevel, SignalLevel)
 
             elif ClusterType == "Switch" and WidgetType == "Alarm":
@@ -945,13 +947,7 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
 
                     UpdateDevice_v2(self, Devices, DeviceUnit, int(data), str(state), BatteryLevel, SignalLevel, ForceUpdate_=True)
 
-            elif WidgetType == "LvlControl" or WidgetType in (
-                "ColorControlRGB",
-                "ColorControlWW",
-                "ColorControlRGBWW",
-                "ColorControlFull",
-                "ColorControl",
-            ):
+            elif WidgetType == "LvlControl" or WidgetType in ( "ColorControlRGB", "ColorControlWW", "ColorControlRGBWW", "ColorControlFull", "ColorControl", ):
                 if Devices[DeviceUnit].SwitchType in (13, 14, 15, 16):
                     # Required Numeric value
                     if value == "00":
@@ -962,6 +958,12 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                         # We only update if the shutter was off before, otherwise we will keep its Level.
                         if Devices[DeviceUnit].nValue == 0 and Devices[DeviceUnit].sValue == "Off":
                             UpdateDevice_v2(self, Devices, DeviceUnit, 1, "100", BatteryLevel, SignalLevel)
+                            
+                elif Devices[DeviceUnit].SwitchType in (7,) and value == "00":
+                        nValue = 0
+                        sValue = prev_sValue
+                        UpdateDevice_v2(self, Devices, DeviceUnit, 0, sValue, BatteryLevel, SignalLevel)
+
                 else:
                     # Required Off and On
                     if value == "00":
@@ -1054,13 +1056,7 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                 UpdateDevice_v2(self, Devices, DeviceUnit, nValue, str(_value), BatteryLevel, SignalLevel)
 
         if "LvlControl" in ClusterType:  # LvlControl ( 0x0008)
-            if WidgetType == "LvlControl" or (
-                WidgetType
-                in (
-                    "BSO-Volet",
-                    "Blind",
-                )
-            ):
+            if WidgetType == "LvlControl" or ( WidgetType in ( "BSO-Volet", "Blind", ) ):
                 # We need to handle the case, where we get an update from a Read Attribute or a Reporting message
                 # We might get a Level, but the device is still Off and we shouldn't make it On .
                 nValue = None
@@ -1081,23 +1077,20 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                             sValue = 0
                         if sValue == 99 and analogValue == 254:
                             sValue = 100
-                self.log.logging(
-                    "Widget",
-                    "Debug",
-                    "------>  LvlControl new sValue: -> %s old nValue/sValue %s:%s" % (sValue, Devices[DeviceUnit].nValue, Devices[DeviceUnit].sValue),
-                    NWKID,
-                )
+                self.log.logging( "Widget", "Debug", "------>  LvlControl new sValue: -> %s old nValue/sValue %s:%s" % (
+                    sValue, Devices[DeviceUnit].nValue, Devices[DeviceUnit].sValue), NWKID,)
                 # In case we reach 0% or 100% we shouldn't switch Off or On, except in the case of Shutter/Blind
                 if sValue == 0:
                     nValue = 0
                     if Devices[DeviceUnit].SwitchType in (13, 14, 15, 16):
-                        self.log.logging(
-                            "Widget",
-                            "Debug",
-                            "------>  LvlControl UpdateDevice: -> %s/%s SwitchType: %s" % (0, 0, Devices[DeviceUnit].SwitchType),
-                            NWKID,
-                        )
+                        self.log.logging( "Widget", "Debug", "------>  LvlControl (Blind) UpdateDevice: -> %s/%s SwitchType: %s" % ( 
+                            0, 0, Devices[DeviceUnit].SwitchType), NWKID, )
                         UpdateDevice_v2(self, Devices, DeviceUnit, 0, "0", BatteryLevel, SignalLevel)
+                    elif Devices[DeviceUnit].SwitchType in (7, ):
+                        self.log.logging( "Widget", "Debug", "------>  LvlControl (Dim) UpdateDevice: -> %s/%s SwitchType: %s" % ( 
+                            0, 0, Devices[DeviceUnit].SwitchType), NWKID, )
+                        UpdateDevice_v2(self, Devices, DeviceUnit, 0, prev_sValue, BatteryLevel, SignalLevel)
+ 
                     else:
                         # if Devices[DeviceUnit].nValue == 0 and Devices[DeviceUnit].sValue == 'Off':
                         if Devices[DeviceUnit].nValue == 0 and (Devices[DeviceUnit].sValue == "Off" or Devices[DeviceUnit].sValue == str(sValue)):
@@ -1108,12 +1101,8 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                 elif sValue == 100:
                     nValue = 1
                     if Devices[DeviceUnit].SwitchType in (13, 14, 15, 16):
-                        self.log.logging(
-                            "Widget",
-                            "Debug",
-                            "------>  LvlControl UpdateDevice: -> %s/%s SwitchType: %s" % (1, 100, Devices[DeviceUnit].SwitchType),
-                            NWKID,
-                        )
+                        self.log.logging( "Widget", "Debug", "------>  LvlControl UpdateDevice: -> %s/%s SwitchType: %s" % (
+                            1, 100, Devices[DeviceUnit].SwitchType), NWKID, )
                         UpdateDevice_v2(self, Devices, DeviceUnit, 1, "100", BatteryLevel, SignalLevel)
 
                     else:
@@ -1130,39 +1119,17 @@ def MajDomoDevice(self, Devices, NWKID, Ep, clusterID, value, Attribute_="", Col
                         # Do nothing. We receive a ReadAttribute  giving the position of a Off device.
                         pass
                     elif Devices[DeviceUnit].SwitchType in (13, 14, 15, 16):
-                        self.log.logging(
-                            "Widget",
-                            "Debug",
-                            "------>  LvlControl UpdateDevice: -> %s/%s SwitchType: %s" % (nValue, sValue, Devices[DeviceUnit].SwitchType),
-                            NWKID,
-                        )
+                        self.log.logging( "Widget", "Debug", "------>  LvlControl UpdateDevice: -> %s/%s SwitchType: %s" % (
+                            nValue, sValue, Devices[DeviceUnit].SwitchType), NWKID, )
                         UpdateDevice_v2(self, Devices, DeviceUnit, 2, str(sValue), BatteryLevel, SignalLevel)
 
                     else:
                         # Just update the Level if Needed
-                        self.log.logging(
-                            "Widget",
-                            "Debug",
-                            "------>  LvlControl UpdateDevice: -> %s/%s SwitchType: %s" % (nValue, sValue, Devices[DeviceUnit].SwitchType),
-                            NWKID,
-                        )
-                        UpdateDevice_v2(
-                            self,
-                            Devices,
-                            DeviceUnit,
-                            Devices[DeviceUnit].nValue,
-                            str(sValue),
-                            BatteryLevel,
-                            SignalLevel,
-                        )
+                        self.log.logging( "Widget", "Debug", "------>  LvlControl UpdateDevice: -> %s/%s SwitchType: %s" % (
+                            nValue, sValue, Devices[DeviceUnit].SwitchType), NWKID, )
+                        UpdateDevice_v2( self, Devices, DeviceUnit, Devices[DeviceUnit].nValue, str(sValue), BatteryLevel, SignalLevel, )
 
-            elif WidgetType in (
-                "ColorControlRGB",
-                "ColorControlWW",
-                "ColorControlRGBWW",
-                "ColorControlFull",
-                "ColorControl",
-            ):
+            elif WidgetType in ( "ColorControlRGB", "ColorControlWW", "ColorControlRGBWW", "ColorControlFull", "ColorControl", ):
                 if Devices[DeviceUnit].nValue != 0 or Devices[DeviceUnit].sValue != "Off":
                     nValue, sValue = getDimmerLevelOfColor(self, value)
                     UpdateDevice_v2(self, Devices, DeviceUnit, nValue, str(sValue), BatteryLevel, SignalLevel, Color_)
